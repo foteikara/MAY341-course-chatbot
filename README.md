@@ -10,7 +10,7 @@ It runs directly in the browser using HTML, CSS, and JavaScript.
 - Can be embedded in Moodle or other platforms
 
 ## 🌐 Live Demo
-[Click here to open the chatbot](https://foteinikara.github.io/MAY341-course-chatbot/)
+[Click here to open the chatbot](https://foteikara.github.io/MAY341-course-chatbot/)
 
 ## 🛠️ Technologies Used
 - HTML
