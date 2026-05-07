@@ -23,12 +23,38 @@ function addMessage(sender, text, className) {
   chatbox.scrollTop = chatbox.scrollHeight;
 }
 
+let notes = {};
+
+// Φόρτωση αρχείου notes.json (ή notes-part2.json)
+fetch("notes.json")
+  .then((response) => response.json())
+  .then((data) => {
+    notes = data;
+  })
+  .catch((error) => console.error("Σφάλμα φόρτωσης των σημειώσεων:", error));
+
 function getBotReply(msg) {
-  if (msg.includes("hello")) return "Hello! 👋 How can I help you with the course?";
-  if (msg.includes("exam")) return "The exam schedule will be announced in class.";
-  if (msg.includes("lecture")) return "Lectures are uploaded weekly on Moodle.";
-  if (msg.includes("assignment")) return "Assignments are due every Friday.";
-  if (msg.includes("teacher")) return "Your instructor will answer questions during office hours.";
-  
-  return "Sorry, I don't understand. Try asking about lectures, exams, or assignments.";
+  msg = msg.toLowerCase();
+  let bestMatch = "";
+  let bestScore = 0;
+
+  // Αναζήτηση μέσα στις ερωτήσεις από το notes.json
+  for (const question in notes) {
+    const words = question.toLowerCase().split(" ");
+    let score = 0;
+
+    for (const w of words) {
+      if (msg.includes(w)) score++;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = question;
+    }
+  }
+
+  if (bestScore > 0) {
+    return notes[bestMatch];
+  } else {
+    return "Δεν βρήκα σχετική απάντηση στις σημειώσεις. Δοκίμασε άλλη διατύπωση 🙂";
+  }
 }
