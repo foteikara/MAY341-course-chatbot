@@ -1,8 +1,10 @@
-function normalizeGreek(text) {
+function normalize(text) {
   return text
     .toLowerCase()
-    .normalize("NFD") // αφαιρεί τόνους
-    .replace(/[\u0300-\u036f]/g, ""); 
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[;,.!?]/g, "")
+    .trim();
 }
 
 function sendMessage() {
@@ -47,7 +49,7 @@ function getBotReply(msg) {
 
   // Αναζήτηση μέσα στις ερωτήσεις από το notes.json
   for (const question in notes) {
-    const words = question.toLowerCase().split(" ");
+    const words = normalize(question).split(" ");
     let score = 0;
 
     for (const w of words) {
