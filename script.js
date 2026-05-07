@@ -1,5 +1,6 @@
 let notes = [];
 let fuse = null;
+let lastMatchedItem = null;
 
 // ---------------- LOAD CHAPTER ----------------
 
@@ -72,6 +73,27 @@ function getBotReply(msg, mode = "answer") {
     return "Οι σημειώσεις δεν έχουν φορτωθεί ακόμα.";
   }
 
+  const followUps = [
+    "τι εννοείς",
+    "δεν κατάλαβα",
+    "εξήγησέ το",
+    "δηλαδή",
+    "πιο απλά"
+  ];
+
+  if (
+    lastMatchedItem &&
+    followUps.some(
+      phrase => msg.toLowerCase().includes(phrase)
+    )
+  ) {
+    return `
+      <b>Πιο απλά:</b><br><br>
+      ${lastMatchedItem.hint}<br><br>
+      ${lastMatchedItem.answer}
+    `;
+  }
+
   const results = fuse.search(msg);
 
   if (results.length === 0) {
@@ -89,6 +111,7 @@ function getBotReply(msg, mode = "answer") {
   }
 
   const best = results[0].item;
+  lastMatchedItem = best;
 
   if (mode === "hint") {
     return `
