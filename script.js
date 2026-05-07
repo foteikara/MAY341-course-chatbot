@@ -1,3 +1,10 @@
+function normalizeGreek(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD") // αφαιρεί τόνους
+    .replace(/[\u0300-\u036f]/g, ""); 
+}
+
 function sendMessage() {
   let input = document.getElementById("userInput");
   let msg = input.value.trim();
@@ -34,7 +41,7 @@ fetch("notes.json")
   .catch((error) => console.error("Σφάλμα φόρτωσης των σημειώσεων:", error));
 
 function getBotReply(msg) {
-  msg = msg.toLowerCase();
+  msg = normalizeGreek(msg);
   let bestMatch = "";
   let bestScore = 0;
 
