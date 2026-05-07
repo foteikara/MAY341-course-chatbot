@@ -1,31 +1,35 @@
 let notes = [];
-let fuse;
+let fuse = null;
 
 // ---------------- LOAD CHAPTER ----------------
 
 async function loadChapter() {
+  const chapterSelect = document.getElementById("chapterSelect");
+  const chapterPath = chapterSelect.value;
+  const chatbox = document.getElementById("chatbox");
 
-  const chapterPath =
-    document.getElementById(
-      "chapterSelect"
-    ).value;
+  chatbox.innerHTML = "";
 
   try {
+    const response = await fetch(chapterPath);
 
-    const response =
-      await fetch(chapterPath);
+    if (!response.ok) {
+      throw new Error("Could not load notes file");
+    }
 
     notes = await response.json();
 
     fuse = new Fuse(notes, {
-      keys: ["question", "answer"],
-      threshold: 0.45,
-      includeScore: true,
+      keys: [
+        "question",
+        "aliases",
+        "keywords",
+        "answer",
+        "hint"
+      ],
+      threshold: 0.65,
+      includeScore: true
     });
-
-    document.getElementById(
-      "chatbox"
-    ).innerHTML = "";
 
     addMessage(
       "Bot",
@@ -34,12 +38,11 @@ async function loadChapter() {
     );
 
   } catch (error) {
-
     console.error(error);
 
     addMessage(
       "Bot",
-      "Σφάλμα φόρτωσης σημειώσεων.",
+      "Δεν μπόρεσα να φορτώσω τις σημειώσεις. Έλεγξε ότι υπάρχει το αρχείο notes/chapter_rounding.json.",
       "bot"
     );
   }
@@ -48,165 +51,101 @@ async function loadChapter() {
 // ---------------- SEND MESSAGE ----------------
 
 function sendMessage(mode = "answer") {
-
-  const input =
-    document.getElementById(
-      "userInput"
-    );
-
+  const input = document.getElementById("userInput");
   const msg = input.value.trim();
 
   if (!msg) return;
 
   addMessage("You", msg, "user");
 
-  const reply =
-    getBotReply(msg, mode);
+  const reply = getBotReply(msg, mode);
 
-  setTimeout(() => {
-
-    addMessage(
-      "Bot",
-      reply,
-      "bot"
-    );
-
-  }, 300);
+  addMessage("Bot", reply, "bot");
 
   input.value = "";
 }
 
 // ---------------- BOT LOGIC ----------------
 
-function getBotReply(
-  msg,
-  mode = "answer"
-) {
-
+function getBotReply(msg, mode = "answer") {
   if (!fuse) {
-
-    return `
-      Δεν έχουν φορτωθεί
-      οι σημειώσεις.
-    `;
+    return "Οι σημειώσεις δεν έχουν φορτωθεί ακόμα.";
   }
 
-  const results =
-    fuse.search(msg);
+  const results = fuse.search(msg);
 
   if (results.length === 0) {
-
     return `
-      Δεν βρήκα σχετική απάντηση.
-
+      Δεν βρήκα σχετική απάντηση.<br><br>
       Δοκίμασε λέξεις όπως:
-      - σφάλμα
-      - ευστάθεια
-      - cancellation
-      - αριθμός μηχανής
+      <ul>
+        <li>σφάλμα</li>
+        <li>στρογγύλευση</li>
+        <li>αριθμός μηχανής</li>
+        <li>ευστάθεια</li>
+        <li>cancellation</li>
+      </ul>
     `;
   }
 
-  const best =
-    results[0].item;
-
-  // ---------- HINT ----------
+  const best = results[0].item;
 
   if (mode === "hint") {
-
     return `
       <b>Hint:</b><br><br>
-      ${best.hint}
+      ${best.hint || "Σκέψου τον βασικό ορισμό της έννοιας."}
     `;
   }
 
-  // ---------- STEPS ----------
-
   if (mode === "steps") {
+    if (!best.steps || best.steps.length === 0) {
+      return best.answer;
+    }
 
     return `
       <b>Βήμα-βήμα:</b>
-
       <ol>
-        ${best.steps
-          .map(
-            step =>
-            `<li>${step}</li>`
-          )
-          .join("")}
+        ${best.steps.map(step => `<li>${step}</li>`).join("")}
       </ol>
     `;
   }
 
-  // ---------- ANSWER ----------
-
   return `
-    <b>${best.question}</b>
-
-    <br><br>
-
-    ${best.answer}
-
-    <br><br>
-
-    <i>${best.feedback}</i>
+    <b>${best.question}</b><br><br>
+    ${best.answer}<br><br>
+    <i>${best.feedback || ""}</i>
   `;
 }
 
 // ---------------- ADD MESSAGE ----------------
 
-function addMessage(
-  sender,
-  text,
-  className
-) {
+function addMessage(sender, text, className) {
+  const chatbox = document.getElementById("chatbox");
 
-  const chatbox =
-    document.getElementById(
-      "chatbox"
-    );
+  const div = document.createElement("div");
+  div.className = "message " + className;
 
-  const div =
-    document.createElement("div");
-
-  div.className =
-    "message " + className;
-
-  div.innerHTML =
-    `<b>${sender}:</b> ${text}`;
+  div.innerHTML = `<b>${sender}:</b> ${text}`;
 
   chatbox.appendChild(div);
 
-  // MathJax rendering
-  if (window.MathJax) {
+  if (window.MathJax && window.MathJax.typesetPromise) {
     MathJax.typesetPromise([div]);
   }
 
-  chatbox.scrollTop =
-    chatbox.scrollHeight;
+  chatbox.scrollTop = chatbox.scrollHeight;
 }
+
 // ---------------- ENTER KEY ----------------
 
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
+document.addEventListener("DOMContentLoaded", () => {
+  loadChapter();
 
-    loadChapter();
+  const input = document.getElementById("userInput");
 
-    const input =
-      document.getElementById(
-        "userInput"
-      );
-
-    input.addEventListener(
-      "keypress",
-      function (e) {
-
-        if (e.key === "Enter") {
-
-          sendMessage();
-        }
-      }
-    );
-  }
-);
+  input.addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+      sendMessage("answer");
+    }
+  });
+});
