@@ -177,10 +177,14 @@ function addMessage(
 
   chatbox.appendChild(div);
 
+  // MathJax rendering
+  if (window.MathJax) {
+    MathJax.typesetPromise([div]);
+  }
+
   chatbox.scrollTop =
     chatbox.scrollHeight;
 }
-
 // ---------------- ENTER KEY ----------------
 
 document.addEventListener(
